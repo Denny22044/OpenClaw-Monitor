@@ -98,6 +98,10 @@ TRANSLATIONS = {
         "safe": "SAFE",
         "review_recommended": "REVIEW RECOMMENDED",
         "potentially_dangerous": "POTENTIALLY DANGEROUS",
+        "version": "Version",
+        "last_update": "Last update",
+        "logs_idle": "Idle (no activity)",
+        "logs_active": "Active",
     },
     "de": {
         "title": "OpenClaw Monitor",
@@ -175,6 +179,10 @@ TRANSLATIONS = {
         "safe": "SICHER",
         "review_recommended": "PRÜFUNG EMPFOHLEN",
         "potentially_dangerous": "POTENZIELL GEFÄHRLICH",
+        "version": "Version",
+        "last_update": "Letztes Update",
+        "logs_idle": "Idle (keine Aktivität)",
+        "logs_active": "Aktiv",
     },
     "fr": {
         "title": "OpenClaw Monitor",
@@ -252,6 +260,10 @@ TRANSLATIONS = {
         "safe": "SÛR",
         "review_recommended": "RÉVISION RECOMMANDÉE",
         "potentially_dangerous": "POTENTIELLEMENT DANGEREUX",
+        "version": "Version",
+        "last_update": "Dernière MAJ",
+        "logs_idle": "Inactif",
+        "logs_active": "Actif",
     },
     "it": {
         "title": "OpenClaw Monitor",
@@ -329,6 +341,10 @@ TRANSLATIONS = {
         "safe": "SICURO",
         "review_recommended": "REVISIONE CONSIGLIATA",
         "potentially_dangerous": "POTENZIALMENTE PERICOLOSO",
+        "version": "Versione",
+        "last_update": "Ultimo agg.",
+        "logs_idle": "Inattivo",
+        "logs_active": "Attivo",
     },
     "es": {
         "title": "OpenClaw Monitor",
@@ -406,6 +422,10 @@ TRANSLATIONS = {
         "safe": "SEGURO",
         "review_recommended": "REVISIÓN RECOMENDADA",
         "potentially_dangerous": "POTENCIALMENTE PELIGROSO",
+        "version": "Versión",
+        "last_update": "Última act.",
+        "logs_idle": "Inactivo",
+        "logs_active": "Activo",
     },
 }
 
@@ -944,6 +964,29 @@ class OpenClawMonitor:
             "security_scan": security_scan
         }
 
+    def get_current_version(self):
+        """Get current OpenClaw version and last update date"""
+        try:
+            # Get version from package.json
+            package_file = self.openclaw_dir / "package.json"
+            version = "?"
+            if package_file.exists():
+                with open(package_file, 'r') as f:
+                    pkg = json.load(f)
+                    version = pkg.get("version", "?")
+
+            # Get last commit date
+            date_output, code = self.run_command(
+                f"cd {self.openclaw_dir} && git log -1 --format=%cd --date=short 2>/dev/null"
+            )
+            last_date = date_output.strip() if code == 0 else ""
+
+            if last_date:
+                return f"{version} ({last_date})"
+            return version
+        except:
+            return "?"
+
     def scan_incoming_changes(self):
         """Scan incoming changes for suspicious patterns with AI analysis"""
         # DANGEROUS patterns - these are almost always malicious
@@ -1157,12 +1200,19 @@ Diff:
         else:
             self.update_status("tui", None, self.t("not_running"))
 
-        # Logs
+        # Logs - if gateway is running but logs not fresh, it's just idle (not an error)
         logs_fresh = self.check_logs_fresh()
-        self.update_status("logs", logs_fresh,
-                           self.t("fresh") if logs_fresh else f"{self.t('stale')} ({self.t('warning')})")
+        if logs_fresh:
+            self.update_status("logs", True, self.t("logs_active"))
+        elif gateway_running and port_ok:
+            # Gateway is fine, just no recent activity - show as neutral/idle
+            indicator = self.status_labels["logs"]["indicator"]
+            indicator.config(text="⚪", fg=self.neutral_color)
+            self.status_labels["logs"]["status"].config(text=self.t("logs_idle"))
+        else:
+            self.update_status("logs", False, self.t("stale"))
 
-        # Updates - show cached status
+        # Updates - show cached status with version info
         if self.update_available:
             if hasattr(self, 'has_security_update') and self.has_security_update:
                 self.update_status("updates", False, f"{self.t('security_update')} ({self.update_info})")
@@ -1171,7 +1221,8 @@ Diff:
                 indicator.config(text="🟡", fg=self.warning_color)
                 self.status_labels["updates"]["status"].config(text=f"{self.t('available')} ({self.update_info})")
         elif self.last_update_check:
-            self.update_status("updates", True, self.t("current"))
+            version_info = self.get_current_version()
+            self.update_status("updates", True, f"v{version_info}")
         else:
             self.update_status("updates", None, self.t("not_checked"))
 
@@ -1438,8 +1489,15 @@ Diff:
         if success:
             self.update_available = False
             self.has_security_update = False
+
+            # Get new version info
+            version_info = self.get_current_version()
             self.log_event(f"✅ {self.t('update_installed')}")
+            self.log_event(f"   {self.t('version')}: {version_info}")
             self.install_update_btn.config(state=tk.DISABLED)
+
+            # Update the last_update_check to now
+            self.last_update_check = datetime.now()
 
             # Restart gateway
             self.restart_gateway()
