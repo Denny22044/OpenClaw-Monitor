@@ -102,6 +102,8 @@ TRANSLATIONS = {
         "last_update": "Last update",
         "logs_idle": "Idle (no activity)",
         "logs_active": "Active",
+        "ignore": "Ignore",
+        "update_ignored": "Update ignored",
     },
     "de": {
         "title": "OpenClaw Monitor",
@@ -183,6 +185,8 @@ TRANSLATIONS = {
         "last_update": "Letztes Update",
         "logs_idle": "Idle (keine Aktivität)",
         "logs_active": "Aktiv",
+        "ignore": "Ignorieren",
+        "update_ignored": "Update ignoriert",
     },
     "fr": {
         "title": "OpenClaw Monitor",
@@ -264,6 +268,8 @@ TRANSLATIONS = {
         "last_update": "Dernière MAJ",
         "logs_idle": "Inactif",
         "logs_active": "Actif",
+        "ignore": "Ignorer",
+        "update_ignored": "MAJ ignorée",
     },
     "it": {
         "title": "OpenClaw Monitor",
@@ -345,6 +351,8 @@ TRANSLATIONS = {
         "last_update": "Ultimo agg.",
         "logs_idle": "Inattivo",
         "logs_active": "Attivo",
+        "ignore": "Ignora",
+        "update_ignored": "Aggiornamento ignorato",
     },
     "es": {
         "title": "OpenClaw Monitor",
@@ -426,6 +434,8 @@ TRANSLATIONS = {
         "last_update": "Última act.",
         "logs_idle": "Inactivo",
         "logs_active": "Activo",
+        "ignore": "Ignorar",
+        "update_ignored": "Actualización ignorada",
     },
 }
 
@@ -781,13 +791,21 @@ class OpenClawMonitor:
                                           command=self.check_updates)
         self.check_update_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
 
+        self.ignore_update_btn = tk.Button(update_btn_row, text=f"🚫 {self.t('ignore')}",
+                                           font=("Helvetica", 10),
+                                           bg=self.neutral_color, fg="#000000",
+                                           relief=tk.FLAT, cursor="hand2", padx=10, pady=6,
+                                           command=self.ignore_update,
+                                           state=tk.DISABLED)
+        self.ignore_update_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5, 5))
+
         self.install_update_btn = tk.Button(update_btn_row, text=f"⬇️ {self.t('install')}",
                                             font=("Helvetica", 10),
                                             bg=self.success_color, fg="#000000",
                                             relief=tk.FLAT, cursor="hand2", padx=10, pady=6,
                                             command=self.install_updates,
                                             state=tk.DISABLED)
-        self.install_update_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
+        self.install_update_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(0, 0))
 
         # Log Section
         self.log_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('events')} ",
@@ -845,6 +863,7 @@ class OpenClawMonitor:
         self.tui_btn.config(text=f"🖥️ {self.t('restart_tui')}")
         self.restart_all_btn.config(text=f"⚡ {self.t('restart_all')}")
         self.check_update_btn.config(text=f"🔍 {self.t('check')}")
+        self.ignore_update_btn.config(text=f"🚫 {self.t('ignore')}")
         self.install_update_btn.config(text=f"⬇️ {self.t('install')}")
 
         # Refresh status display
@@ -894,7 +913,7 @@ class OpenClawMonitor:
         return bool(output.strip())
 
     def check_logs_fresh(self):
-        """Check if logs were updated recently (within 5 min)"""
+        """Check if logs were updated recently (within 5 min), returns (is_fresh, last_time)"""
         log_file = Path(f"/tmp/openclaw/openclaw-{datetime.now().strftime('%Y-%m-%d')}.log")
         if self.is_windows:
             log_file = self.openclaw_config_dir / "logs" / f"openclaw-{datetime.now().strftime('%Y-%m-%d')}.log"
@@ -902,8 +921,9 @@ class OpenClawMonitor:
         if log_file.exists():
             mtime = log_file.stat().st_mtime
             age = time.time() - mtime
-            return age < 300  # 5 minutes
-        return False
+            last_time = datetime.fromtimestamp(mtime).strftime('%d.%m. %H:%M')
+            return age < 300, last_time  # 5 minutes
+        return False, None
 
     def get_recent_errors(self, lines=5):
         """Get recent errors from log"""
@@ -1201,14 +1221,15 @@ Diff:
             self.update_status("tui", None, self.t("not_running"))
 
         # Logs - if gateway is running but logs not fresh, it's just idle (not an error)
-        logs_fresh = self.check_logs_fresh()
+        logs_fresh, last_log_time = self.check_logs_fresh()
         if logs_fresh:
-            self.update_status("logs", True, self.t("logs_active"))
+            self.update_status("logs", True, f"{self.t('logs_active')} ({last_log_time})")
         elif gateway_running and port_ok:
             # Gateway is fine, just no recent activity - show as neutral/idle
             indicator = self.status_labels["logs"]["indicator"]
             indicator.config(text="⚪", fg=self.neutral_color)
-            self.status_labels["logs"]["status"].config(text=self.t("logs_idle"))
+            time_info = f" ({last_log_time})" if last_log_time else ""
+            self.status_labels["logs"]["status"].config(text=f"{self.t('logs_idle')}{time_info}")
         else:
             self.update_status("logs", False, self.t("stale"))
 
@@ -1424,6 +1445,7 @@ Diff:
                 self.log_event(f"Update: {result['commits_behind']} {self.t('commits_behind')}")
 
             self.install_update_btn.config(state=tk.NORMAL)
+            self.ignore_update_btn.config(state=tk.NORMAL)
         else:
             self.update_available = False
             self.has_security_update = False
@@ -1431,6 +1453,24 @@ Diff:
             if not silent:
                 self.log_event(f"✅ {self.t('openclaw_current')}")
             self.install_update_btn.config(state=tk.DISABLED, bg=self.success_color)
+            self.ignore_update_btn.config(state=tk.DISABLED)
+
+        self.check_all_status()
+
+    def ignore_update(self):
+        """Ignore the current update"""
+        self.update_available = False
+        self.has_security_update = False
+        self.update_info = ""
+        self.log_event(f"🚫 {self.t('update_ignored')}")
+
+        # Disable buttons
+        self.install_update_btn.config(state=tk.DISABLED)
+        self.ignore_update_btn.config(state=tk.DISABLED)
+
+        # Update status to show current version
+        version_info = self.get_current_version()
+        self.update_status("updates", True, f"v{version_info}")
 
         self.check_all_status()
 
@@ -1495,6 +1535,7 @@ Diff:
             self.log_event(f"✅ {self.t('update_installed')}")
             self.log_event(f"   {self.t('version')}: {version_info}")
             self.install_update_btn.config(state=tk.DISABLED)
+            self.ignore_update_btn.config(state=tk.DISABLED)
 
             # Update the last_update_check to now
             self.last_update_check = datetime.now()
