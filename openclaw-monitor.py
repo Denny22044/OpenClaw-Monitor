@@ -115,6 +115,11 @@ TRANSLATIONS = {
         "bots": "Bots",
         "add_bot": "Add",
         "all_bots_status": "All Bots",
+        "usage_stats": "Usage & Costs",
+        "tokens_today": "Tokens today",
+        "cost_today": "Cost today",
+        "reset": "Reset",
+        "total": "Total",
     },
     "de": {
         "title": "OpenClaw Monitor",
@@ -209,6 +214,11 @@ TRANSLATIONS = {
         "bots": "Bots",
         "add_bot": "Hinzufügen",
         "all_bots_status": "Alle Bots",
+        "usage_stats": "Nutzung & Kosten",
+        "tokens_today": "Tokens heute",
+        "cost_today": "Kosten heute",
+        "reset": "Reset",
+        "total": "Gesamt",
     },
     "fr": {
         "title": "OpenClaw Monitor",
@@ -303,6 +313,11 @@ TRANSLATIONS = {
         "bots": "Bots",
         "add_bot": "Ajouter",
         "all_bots_status": "Tous les Bots",
+        "usage_stats": "Utilisation & Coûts",
+        "tokens_today": "Tokens aujourd'hui",
+        "cost_today": "Coût aujourd'hui",
+        "reset": "Réinitialiser",
+        "total": "Total",
     },
     "it": {
         "title": "OpenClaw Monitor",
@@ -397,6 +412,11 @@ TRANSLATIONS = {
         "bots": "Bot",
         "add_bot": "Aggiungi",
         "all_bots_status": "Tutti i Bot",
+        "usage_stats": "Utilizzo & Costi",
+        "tokens_today": "Token oggi",
+        "cost_today": "Costo oggi",
+        "reset": "Azzera",
+        "total": "Totale",
     },
     "es": {
         "title": "OpenClaw Monitor",
@@ -491,6 +511,11 @@ TRANSLATIONS = {
         "bots": "Bots",
         "add_bot": "Añadir",
         "all_bots_status": "Todos los Bots",
+        "usage_stats": "Uso y Costos",
+        "tokens_today": "Tokens hoy",
+        "cost_today": "Costo hoy",
+        "reset": "Reiniciar",
+        "total": "Total",
     },
 }
 
@@ -535,6 +560,11 @@ class OpenClawMonitor:
         self.update_available = False
         self.last_update_check = None
         self.update_info = ""
+
+        # Usage tracking
+        self.tokens_today = 0
+        self.cost_today = 0.0
+        self.usage_by_model = {}
         self.current_model = tk.StringVar()
         self.current_lang = tk.StringVar(value="en")
 
@@ -564,6 +594,8 @@ class OpenClawMonitor:
 
         self.setup_ui()
         self.initialize_advanced_visibility()
+        self.load_usage_stats()
+        self.update_usage_display()
         self.start_monitoring()
 
     def t(self, key):
@@ -817,6 +849,41 @@ class OpenClawMonitor:
                                     command=self.toggle_watchdog)
         self.toggle_btn.pack(side=tk.RIGHT)
 
+        # Usage Stats Section
+        self.usage_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('usage_stats')} ",
+                                         font=("Helvetica", 12, "bold"),
+                                         bg=self.bg_color, fg=self.fg_color,
+                                         padx=10, pady=8)
+        self.usage_frame.pack(fill=tk.X, pady=(0, 10))
+
+        usage_row1 = tk.Frame(self.usage_frame, bg=self.bg_color)
+        usage_row1.pack(fill=tk.X, pady=2)
+
+        self.tokens_label = tk.Label(usage_row1, text=f"{self.t('tokens_today')}: 0",
+                                     font=("Helvetica", 10),
+                                     bg=self.bg_color, fg=self.fg_color)
+        self.tokens_label.pack(side=tk.LEFT)
+
+        self.cost_label = tk.Label(usage_row1, text=f"{self.t('cost_today')}: $0.00",
+                                   font=("Helvetica", 10, "bold"),
+                                   bg=self.bg_color, fg=self.success_color)
+        self.cost_label.pack(side=tk.RIGHT)
+
+        usage_row2 = tk.Frame(self.usage_frame, bg=self.bg_color)
+        usage_row2.pack(fill=tk.X, pady=2)
+
+        self.usage_details_label = tk.Label(usage_row2, text="",
+                                            font=("Helvetica", 9),
+                                            bg=self.bg_color, fg=self.neutral_color)
+        self.usage_details_label.pack(side=tk.LEFT)
+
+        self.reset_usage_btn = tk.Button(usage_row2, text=f"🔄 {self.t('reset')}",
+                                         font=("Helvetica", 9),
+                                         bg=self.neutral_color, fg="#000000",
+                                         relief=tk.FLAT, cursor="hand2",
+                                         command=self.reset_usage_stats)
+        self.reset_usage_btn.pack(side=tk.RIGHT)
+
         # Manual Controls Section
         self.controls_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('manual_control')} ",
                                             font=("Helvetica", 12, "bold"),
@@ -1028,6 +1095,11 @@ class OpenClawMonitor:
         self.ignore_update_btn.config(text=f"🚫 {self.t('ignore')}")
         self.install_update_btn.config(text=f"⬇️ {self.t('install')}")
         self.recheck_btn.config(text=f"🤖 {self.t('recheck_ai')}")
+
+        # Update usage stats frame
+        self.usage_frame.config(text=f" {self.t('usage_stats')} ")
+        self.reset_usage_btn.config(text=f"🔄 {self.t('reset')}")
+        self.update_usage_display()
 
         # Update notifications frame and checkbuttons
         self.notify_frame.config(text=f" {self.t('notifications')} ")
@@ -1330,11 +1402,15 @@ Diff:
 
     def log_event(self, message):
         """Add event to log"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
+        now = datetime.now()
+        timestamp = now.strftime("%H:%M:%S")
         self.log_text.config(state=tk.NORMAL)
         self.log_text.insert(tk.END, f"[{timestamp}] {message}\n")
         self.log_text.see(tk.END)
         self.log_text.config(state=tk.DISABLED)
+        # Update log frame title with last event time
+        date_str = now.strftime("%d.%m. %H:%M")
+        self.log_frame.config(text=f" {self.t('events')} ({date_str}) ")
 
     def check_all_status(self):
         """Check all component status"""
@@ -1375,14 +1451,17 @@ Diff:
         self.update_status("logs", logs_fresh,
                            self.t("fresh") if logs_fresh else f"{self.t('stale')} ({self.t('warning')})")
 
-        # Updates - show cached status
+        # Updates - show cached status with version
+        current_version = self.get_current_version() if hasattr(self, 'get_current_version') else ""
+        version_prefix = f"v{current_version} → " if current_version else ""
+
         if self.update_available:
             if hasattr(self, 'has_security_update') and self.has_security_update:
-                self.update_status("updates", False, f"{self.t('security_update')} ({self.update_info})")
+                self.update_status("updates", False, f"{version_prefix}{self.t('security_update')} ({self.update_info})")
             else:
                 indicator = self.status_labels["updates"]["indicator"]
                 indicator.config(text="🟡", fg=self.warning_color)
-                self.status_labels["updates"]["status"].config(text=f"{self.t('available')} ({self.update_info})")
+                self.status_labels["updates"]["status"].config(text=f"{version_prefix}{self.t('available')} ({self.update_info})")
         elif self.last_update_check:
             version_info = self.get_current_version() if hasattr(self, 'get_current_version') else ""
             check_date = self.last_update_check.strftime('%d.%m. %H:%M')
@@ -1681,6 +1760,67 @@ Diff:
         except:
             pass
         return ""
+
+    def reset_usage_stats(self):
+        """Reset usage statistics"""
+        self.tokens_today = 0
+        self.cost_today = 0.0
+        self.usage_by_model = {}
+        self.update_usage_display()
+        self.save_usage_stats()
+        self.log_event(f"🔄 {self.t('reset')} - {self.t('usage_stats')}")
+
+    def update_usage_display(self):
+        """Update the usage stats display"""
+        self.tokens_label.config(text=f"{self.t('tokens_today')}: {self.tokens_today:,}")
+        self.cost_label.config(text=f"{self.t('cost_today')}: ${self.cost_today:.4f}")
+
+        # Show breakdown by model
+        if self.usage_by_model:
+            details = " | ".join([f"{m.split('/')[-1][:10]}: ${c:.3f}"
+                                  for m, c in self.usage_by_model.items()])
+            self.usage_details_label.config(text=details)
+        else:
+            self.usage_details_label.config(text="")
+
+    def load_usage_stats(self):
+        """Load usage stats from file"""
+        try:
+            usage_file = self.openclaw_config_dir / "usage-stats.json"
+            if usage_file.exists():
+                with open(usage_file, 'r') as f:
+                    data = json.load(f)
+                    # Check if it's from today
+                    if data.get("date") == datetime.now().strftime("%Y-%m-%d"):
+                        self.tokens_today = data.get("tokens", 0)
+                        self.cost_today = data.get("cost", 0.0)
+                        self.usage_by_model = data.get("by_model", {})
+        except:
+            pass
+
+    def save_usage_stats(self):
+        """Save usage stats to file"""
+        try:
+            usage_file = self.openclaw_config_dir / "usage-stats.json"
+            with open(usage_file, 'w') as f:
+                json.dump({
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "tokens": self.tokens_today,
+                    "cost": self.cost_today,
+                    "by_model": self.usage_by_model
+                }, f, indent=2)
+        except:
+            pass
+
+    def add_usage(self, tokens, cost, model="unknown"):
+        """Add usage to today's stats"""
+        self.tokens_today += tokens
+        self.cost_today += cost
+        if model not in self.usage_by_model:
+            self.usage_by_model[model] = 0.0
+        self.usage_by_model[model] += cost
+        self.update_usage_display()
+        self.save_usage_stats()
 
     def ignore_update(self):
         """Ignore the current update"""
