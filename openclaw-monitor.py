@@ -99,11 +99,22 @@ TRANSLATIONS = {
         "review_recommended": "REVIEW RECOMMENDED",
         "potentially_dangerous": "POTENTIALLY DANGEROUS",
         "version": "Version",
-        "last_update": "Last update",
-        "logs_idle": "Idle (no activity)",
-        "logs_active": "Active",
+        "last_update": "Last check",
         "ignore": "Ignore",
         "update_ignored": "Update ignored",
+        "advanced": "Advanced",
+        "show_more": "Show more",
+        "show_less": "Show less",
+        "notifications": "Notifications",
+        "gateway_down": "Gateway offline",
+        "high_cost": "High cost",
+        "security_alert": "Security alert",
+        "ai_update_check": "AI Check",
+        "ai_checking": "AI analyzing...",
+        "recheck_ai": "Re-check",
+        "bots": "Bots",
+        "add_bot": "Add",
+        "all_bots_status": "All Bots",
     },
     "de": {
         "title": "OpenClaw Monitor",
@@ -182,11 +193,22 @@ TRANSLATIONS = {
         "review_recommended": "PRÜFUNG EMPFOHLEN",
         "potentially_dangerous": "POTENZIELL GEFÄHRLICH",
         "version": "Version",
-        "last_update": "Letztes Update",
-        "logs_idle": "Idle (keine Aktivität)",
-        "logs_active": "Aktiv",
+        "last_update": "Letzte Prüfung",
         "ignore": "Ignorieren",
         "update_ignored": "Update ignoriert",
+        "advanced": "Erweitert",
+        "show_more": "Mehr anzeigen",
+        "show_less": "Weniger anzeigen",
+        "notifications": "Benachrichtigungen",
+        "gateway_down": "Gateway offline",
+        "high_cost": "Hohe Kosten",
+        "security_alert": "Sicherheitsalarm",
+        "ai_update_check": "KI-Prüfung",
+        "ai_checking": "KI analysiert...",
+        "recheck_ai": "Nochmal",
+        "bots": "Bots",
+        "add_bot": "Hinzufügen",
+        "all_bots_status": "Alle Bots",
     },
     "fr": {
         "title": "OpenClaw Monitor",
@@ -265,11 +287,22 @@ TRANSLATIONS = {
         "review_recommended": "RÉVISION RECOMMANDÉE",
         "potentially_dangerous": "POTENTIELLEMENT DANGEREUX",
         "version": "Version",
-        "last_update": "Dernière MAJ",
-        "logs_idle": "Inactif",
-        "logs_active": "Actif",
+        "last_update": "Dernière vérif.",
         "ignore": "Ignorer",
-        "update_ignored": "MAJ ignorée",
+        "update_ignored": "Mise à jour ignorée",
+        "advanced": "Avancé",
+        "show_more": "Afficher plus",
+        "show_less": "Afficher moins",
+        "notifications": "Notifications",
+        "gateway_down": "Gateway hors ligne",
+        "high_cost": "Coût élevé",
+        "security_alert": "Alerte sécurité",
+        "ai_update_check": "Vérif. IA",
+        "ai_checking": "IA en analyse...",
+        "recheck_ai": "Revérifier",
+        "bots": "Bots",
+        "add_bot": "Ajouter",
+        "all_bots_status": "Tous les Bots",
     },
     "it": {
         "title": "OpenClaw Monitor",
@@ -348,11 +381,22 @@ TRANSLATIONS = {
         "review_recommended": "REVISIONE CONSIGLIATA",
         "potentially_dangerous": "POTENZIALMENTE PERICOLOSO",
         "version": "Versione",
-        "last_update": "Ultimo agg.",
-        "logs_idle": "Inattivo",
-        "logs_active": "Attivo",
+        "last_update": "Ultimo controllo",
         "ignore": "Ignora",
         "update_ignored": "Aggiornamento ignorato",
+        "advanced": "Avanzate",
+        "show_more": "Mostra più",
+        "show_less": "Mostra meno",
+        "notifications": "Notifiche",
+        "gateway_down": "Gateway offline",
+        "high_cost": "Costo elevato",
+        "security_alert": "Allarme sicurezza",
+        "ai_update_check": "Controllo IA",
+        "ai_checking": "IA in analisi...",
+        "recheck_ai": "Ricontrolla",
+        "bots": "Bot",
+        "add_bot": "Aggiungi",
+        "all_bots_status": "Tutti i Bot",
     },
     "es": {
         "title": "OpenClaw Monitor",
@@ -431,11 +475,22 @@ TRANSLATIONS = {
         "review_recommended": "REVISIÓN RECOMENDADA",
         "potentially_dangerous": "POTENCIALMENTE PELIGROSO",
         "version": "Versión",
-        "last_update": "Última act.",
-        "logs_idle": "Inactivo",
-        "logs_active": "Activo",
+        "last_update": "Última verif.",
         "ignore": "Ignorar",
         "update_ignored": "Actualización ignorada",
+        "advanced": "Avanzado",
+        "show_more": "Mostrar más",
+        "show_less": "Mostrar menos",
+        "notifications": "Notificaciones",
+        "gateway_down": "Gateway offline",
+        "high_cost": "Costo alto",
+        "security_alert": "Alerta seguridad",
+        "ai_update_check": "Verificación IA",
+        "ai_checking": "IA analizando...",
+        "recheck_ai": "Revisar",
+        "bots": "Bots",
+        "add_bot": "Añadir",
+        "all_bots_status": "Todos los Bots",
     },
 }
 
@@ -452,8 +507,9 @@ class OpenClawMonitor:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("OpenClaw Monitor")
-        self.root.geometry("450x750")
-        self.root.resizable(False, False)
+        self.root.geometry("450x500")
+        self.root.resizable(True, True)
+        self.root.minsize(400, 400)
 
         # Detect platform
         self.platform = platform.system().lower()  # 'darwin', 'windows', 'linux'
@@ -475,6 +531,7 @@ class OpenClawMonitor:
         # State
         self.running = True
         self.watchdog_auto = tk.BooleanVar(value=False)
+        self.advanced_expanded = tk.BooleanVar(value=False)
         self.update_available = False
         self.last_update_check = None
         self.update_info = ""
@@ -506,6 +563,7 @@ class OpenClawMonitor:
         self.load_config()
 
         self.setup_ui()
+        self.initialize_advanced_visibility()
         self.start_monitoring()
 
     def t(self, key):
@@ -544,6 +602,7 @@ class OpenClawMonitor:
                 with open(self.monitor_config_file, 'r') as f:
                     config = json.load(f)
                     self.current_lang.set(config.get("language", "en"))
+                    self.advanced_expanded.set(config.get("advanced_expanded", False))
             else:
                 # Try to detect system language
                 import locale
@@ -561,7 +620,10 @@ class OpenClawMonitor:
         try:
             self.monitor_config_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self.monitor_config_file, 'w') as f:
-                json.dump({"language": self.current_lang.get()}, f, indent=2)
+                json.dump({
+                    "language": self.current_lang.get(),
+                    "advanced_expanded": self.advanced_expanded.get()
+                }, f, indent=2)
         except Exception:
             pass
 
@@ -689,8 +751,20 @@ class OpenClawMonitor:
 
             self.status_labels[key] = {"indicator": indicator, "name": name, "status": status_text}
 
+        # Advanced Section Toggle Button
+        self.expand_btn = tk.Button(self.main_frame,
+                                    text=f"▶ {self.t('show_more')}",
+                                    font=("Helvetica", 10),
+                                    bg=self.bg_color, fg=self.accent_color,
+                                    relief=tk.FLAT, cursor="hand2",
+                                    command=self.toggle_advanced_section)
+        self.expand_btn.pack(fill=tk.X, pady=(0, 5))
+
+        # Advanced Container Frame (collapsible)
+        self.advanced_container = tk.Frame(self.main_frame, bg=self.bg_color)
+
         # Model Selection Section
-        self.model_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('ai_model')} ",
+        self.model_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('ai_model')} ",
                                          font=("Helvetica", 12, "bold"),
                                          bg=self.bg_color, fg=self.fg_color,
                                          padx=10, pady=10)
@@ -722,7 +796,7 @@ class OpenClawMonitor:
         self.apply_model_btn.pack(side=tk.RIGHT)
 
         # Watchdog Toggle Section
-        self.toggle_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('watchdog_auto')} ",
+        self.toggle_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('watchdog_auto')} ",
                                           font=("Helvetica", 12, "bold"),
                                           bg=self.bg_color, fg=self.fg_color,
                                           padx=10, pady=10)
@@ -744,7 +818,7 @@ class OpenClawMonitor:
         self.toggle_btn.pack(side=tk.RIGHT)
 
         # Manual Controls Section
-        self.controls_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('manual_control')} ",
+        self.controls_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('manual_control')} ",
                                             font=("Helvetica", 12, "bold"),
                                             bg=self.bg_color, fg=self.fg_color,
                                             padx=10, pady=10)
@@ -775,7 +849,7 @@ class OpenClawMonitor:
         self.restart_all_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(3, 0))
 
         # Update Section
-        self.update_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('software_update')} ",
+        self.update_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('software_update')} ",
                                           font=("Helvetica", 12, "bold"),
                                           bg=self.bg_color, fg=self.fg_color,
                                           padx=10, pady=10)
@@ -807,8 +881,76 @@ class OpenClawMonitor:
                                             state=tk.DISABLED)
         self.install_update_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(0, 0))
 
+        # Second row with recheck button
+        update_btn_row2 = tk.Frame(self.update_frame, bg=self.bg_color)
+        update_btn_row2.pack(fill=tk.X, pady=(5, 0))
+
+        self.recheck_btn = tk.Button(update_btn_row2, text=f"🤖 {self.t('recheck_ai')}",
+                                     font=("Helvetica", 10),
+                                     bg=self.accent_color, fg="#000000",
+                                     relief=tk.FLAT, cursor="hand2", padx=10, pady=6,
+                                     command=self.recheck_with_ai,
+                                     state=tk.DISABLED)
+        self.recheck_btn.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+        # Notifications Section
+        self.notify_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('notifications')} ",
+                                          font=("Helvetica", 12, "bold"),
+                                          bg=self.bg_color, fg=self.fg_color,
+                                          padx=10, pady=5)
+        self.notify_frame.pack(fill=tk.X, pady=(0, 10))
+
+        notify_row = tk.Frame(self.notify_frame, bg=self.bg_color)
+        notify_row.pack(fill=tk.X)
+
+        # Checkboxes for notification types
+        self.notify_gateway = tk.BooleanVar(value=True)
+        self.notify_cost = tk.BooleanVar(value=True)
+        self.notify_security = tk.BooleanVar(value=True)
+        self.ai_update_check = tk.BooleanVar(value=True)
+
+        cb1 = tk.Checkbutton(notify_row, text=f"🔴 {self.t('gateway_down')}",
+                             variable=self.notify_gateway,
+                             bg=self.bg_color, fg=self.fg_color,
+                             selectcolor=self.bg_color, activebackground=self.bg_color,
+                             font=("Helvetica", 9))
+        cb1.pack(side=tk.LEFT)
+
+        cb2 = tk.Checkbutton(notify_row, text=f"💰 {self.t('high_cost')}",
+                             variable=self.notify_cost,
+                             bg=self.bg_color, fg=self.fg_color,
+                             selectcolor=self.bg_color, activebackground=self.bg_color,
+                             font=("Helvetica", 9))
+        cb2.pack(side=tk.LEFT, padx=(10, 0))
+
+        cb3 = tk.Checkbutton(notify_row, text=f"🛡️ {self.t('security_alert')}",
+                             variable=self.notify_security,
+                             bg=self.bg_color, fg=self.fg_color,
+                             selectcolor=self.bg_color, activebackground=self.bg_color,
+                             font=("Helvetica", 9))
+        cb3.pack(side=tk.LEFT, padx=(10, 0))
+
+        # Second row for AI check
+        notify_row2 = tk.Frame(self.notify_frame, bg=self.bg_color)
+        notify_row2.pack(fill=tk.X, pady=(5, 0))
+
+        cb4 = tk.Checkbutton(notify_row2, text=f"🤖 {self.t('ai_update_check')}",
+                             variable=self.ai_update_check,
+                             bg=self.bg_color, fg=self.fg_color,
+                             selectcolor=self.bg_color, activebackground=self.bg_color,
+                             font=("Helvetica", 9))
+        cb4.pack(side=tk.LEFT)
+
+        # Store checkbuttons for language refresh
+        self.notify_checkbuttons = [
+            (cb1, "gateway_down", "🔴"),
+            (cb2, "high_cost", "💰"),
+            (cb3, "security_alert", "🛡️"),
+            (cb4, "ai_update_check", "🤖")
+        ]
+
         # Log Section
-        self.log_frame = tk.LabelFrame(self.main_frame, text=f" {self.t('events')} ",
+        self.log_frame = tk.LabelFrame(self.advanced_container, text=f" {self.t('events')} ",
                                        font=("Helvetica", 12, "bold"),
                                        bg=self.bg_color, fg=self.fg_color,
                                        padx=10, pady=10)
@@ -836,6 +978,26 @@ class OpenClawMonitor:
             self.current_lang.set(lang_codes[selected_index])
             self.save_monitor_config()
             self.refresh_ui_texts()
+
+    def toggle_advanced_section(self):
+        """Toggle the visibility of advanced sections"""
+        if self.advanced_expanded.get():
+            # Collapse
+            self.advanced_container.pack_forget()
+            self.expand_btn.config(text=f"▶ {self.t('show_more')}")
+            self.advanced_expanded.set(False)
+        else:
+            # Expand
+            self.advanced_container.pack(fill=tk.BOTH, expand=True, before=self.update_label)
+            self.expand_btn.config(text=f"▼ {self.t('show_less')}")
+            self.advanced_expanded.set(True)
+        self.save_monitor_config()
+
+    def initialize_advanced_visibility(self):
+        """Initialize the visibility of advanced sections based on saved state"""
+        if self.advanced_expanded.get():
+            self.advanced_container.pack(fill=tk.BOTH, expand=True, before=self.update_label)
+            self.expand_btn.config(text=f"▼ {self.t('show_less')}")
 
     def refresh_ui_texts(self):
         """Refresh all UI texts with current language"""
@@ -865,6 +1027,18 @@ class OpenClawMonitor:
         self.check_update_btn.config(text=f"🔍 {self.t('check')}")
         self.ignore_update_btn.config(text=f"🚫 {self.t('ignore')}")
         self.install_update_btn.config(text=f"⬇️ {self.t('install')}")
+        self.recheck_btn.config(text=f"🤖 {self.t('recheck_ai')}")
+
+        # Update notifications frame and checkbuttons
+        self.notify_frame.config(text=f" {self.t('notifications')} ")
+        for cb, key, emoji in self.notify_checkbuttons:
+            cb.config(text=f"{emoji} {self.t(key)}")
+
+        # Update expand button
+        if self.advanced_expanded.get():
+            self.expand_btn.config(text=f"▼ {self.t('show_less')}")
+        else:
+            self.expand_btn.config(text=f"▶ {self.t('show_more')}")
 
         # Refresh status display
         self.check_all_status()
@@ -913,7 +1087,7 @@ class OpenClawMonitor:
         return bool(output.strip())
 
     def check_logs_fresh(self):
-        """Check if logs were updated recently (within 5 min), returns (is_fresh, last_time)"""
+        """Check if logs were updated recently (within 5 min)"""
         log_file = Path(f"/tmp/openclaw/openclaw-{datetime.now().strftime('%Y-%m-%d')}.log")
         if self.is_windows:
             log_file = self.openclaw_config_dir / "logs" / f"openclaw-{datetime.now().strftime('%Y-%m-%d')}.log"
@@ -921,9 +1095,8 @@ class OpenClawMonitor:
         if log_file.exists():
             mtime = log_file.stat().st_mtime
             age = time.time() - mtime
-            last_time = datetime.fromtimestamp(mtime).strftime('%d.%m. %H:%M')
-            return age < 300, last_time  # 5 minutes
-        return False, None
+            return age < 300  # 5 minutes
+        return False
 
     def get_recent_errors(self, lines=5):
         """Get recent errors from log"""
@@ -983,29 +1156,6 @@ class OpenClawMonitor:
             "update_available": commits_behind > 0,
             "security_scan": security_scan
         }
-
-    def get_current_version(self):
-        """Get current OpenClaw version and last update date"""
-        try:
-            # Get version from package.json
-            package_file = self.openclaw_dir / "package.json"
-            version = "?"
-            if package_file.exists():
-                with open(package_file, 'r') as f:
-                    pkg = json.load(f)
-                    version = pkg.get("version", "?")
-
-            # Get last commit date
-            date_output, code = self.run_command(
-                f"cd {self.openclaw_dir} && git log -1 --format=%cd --date=short 2>/dev/null"
-            )
-            last_date = date_output.strip() if code == 0 else ""
-
-            if last_date:
-                return f"{version} ({last_date})"
-            return version
-        except:
-            return "?"
 
     def scan_incoming_changes(self):
         """Scan incoming changes for suspicious patterns with AI analysis"""
@@ -1220,20 +1370,12 @@ Diff:
         else:
             self.update_status("tui", None, self.t("not_running"))
 
-        # Logs - if gateway is running but logs not fresh, it's just idle (not an error)
-        logs_fresh, last_log_time = self.check_logs_fresh()
-        if logs_fresh:
-            self.update_status("logs", True, f"{self.t('logs_active')} ({last_log_time})")
-        elif gateway_running and port_ok:
-            # Gateway is fine, just no recent activity - show as neutral/idle
-            indicator = self.status_labels["logs"]["indicator"]
-            indicator.config(text="⚪", fg=self.neutral_color)
-            time_info = f" ({last_log_time})" if last_log_time else ""
-            self.status_labels["logs"]["status"].config(text=f"{self.t('logs_idle')}{time_info}")
-        else:
-            self.update_status("logs", False, self.t("stale"))
+        # Logs
+        logs_fresh = self.check_logs_fresh()
+        self.update_status("logs", logs_fresh,
+                           self.t("fresh") if logs_fresh else f"{self.t('stale')} ({self.t('warning')})")
 
-        # Updates - show cached status with version info
+        # Updates - show cached status
         if self.update_available:
             if hasattr(self, 'has_security_update') and self.has_security_update:
                 self.update_status("updates", False, f"{self.t('security_update')} ({self.update_info})")
@@ -1242,8 +1384,12 @@ Diff:
                 indicator.config(text="🟡", fg=self.warning_color)
                 self.status_labels["updates"]["status"].config(text=f"{self.t('available')} ({self.update_info})")
         elif self.last_update_check:
-            version_info = self.get_current_version()
-            self.update_status("updates", True, f"v{version_info}")
+            version_info = self.get_current_version() if hasattr(self, 'get_current_version') else ""
+            check_date = self.last_update_check.strftime('%d.%m. %H:%M')
+            if version_info:
+                self.update_status("updates", True, f"v{version_info} ({check_date})")
+            else:
+                self.update_status("updates", True, f"{self.t('current')} ({check_date})")
         else:
             self.update_status("updates", None, self.t("not_checked"))
 
@@ -1446,6 +1592,7 @@ Diff:
 
             self.install_update_btn.config(state=tk.NORMAL)
             self.ignore_update_btn.config(state=tk.NORMAL)
+            self.recheck_btn.config(state=tk.NORMAL)
         else:
             self.update_available = False
             self.has_security_update = False
@@ -1454,23 +1601,7 @@ Diff:
                 self.log_event(f"✅ {self.t('openclaw_current')}")
             self.install_update_btn.config(state=tk.DISABLED, bg=self.success_color)
             self.ignore_update_btn.config(state=tk.DISABLED)
-
-        self.check_all_status()
-
-    def ignore_update(self):
-        """Ignore the current update"""
-        self.update_available = False
-        self.has_security_update = False
-        self.update_info = ""
-        self.log_event(f"🚫 {self.t('update_ignored')}")
-
-        # Disable buttons
-        self.install_update_btn.config(state=tk.DISABLED)
-        self.ignore_update_btn.config(state=tk.DISABLED)
-
-        # Update status to show current version
-        version_info = self.get_current_version()
-        self.update_status("updates", True, f"v{version_info}")
+            self.recheck_btn.config(state=tk.DISABLED)
 
         self.check_all_status()
 
@@ -1529,16 +1660,8 @@ Diff:
         if success:
             self.update_available = False
             self.has_security_update = False
-
-            # Get new version info
-            version_info = self.get_current_version()
             self.log_event(f"✅ {self.t('update_installed')}")
-            self.log_event(f"   {self.t('version')}: {version_info}")
             self.install_update_btn.config(state=tk.DISABLED)
-            self.ignore_update_btn.config(state=tk.DISABLED)
-
-            # Update the last_update_check to now
-            self.last_update_check = datetime.now()
 
             # Restart gateway
             self.restart_gateway()
@@ -1546,6 +1669,54 @@ Diff:
             self.log_event(f"❌ {self.t('update_failed')}")
 
         self.check_all_status()
+
+    def get_current_version(self):
+        """Get the current version from package.json or git"""
+        try:
+            package_json = self.openclaw_dir / "package.json"
+            if package_json.exists():
+                with open(package_json, 'r') as f:
+                    data = json.load(f)
+                    return data.get("version", "")
+        except:
+            pass
+        return ""
+
+    def ignore_update(self):
+        """Ignore the current update"""
+        self.update_available = False
+        self.has_security_update = False
+        self.install_update_btn.config(state=tk.DISABLED)
+        self.ignore_update_btn.config(state=tk.DISABLED)
+        self.recheck_btn.config(state=tk.DISABLED)
+        self.log_event(f"🚫 {self.t('update_ignored')}")
+        self.check_all_status()
+
+    def recheck_with_ai(self):
+        """Re-run AI analysis on the current update"""
+        self.recheck_btn.config(state=tk.DISABLED, text="🤖...")
+        self.log_event(f"🤖 {self.t('ai_checking')}")
+
+        def do_recheck():
+            ai_result = self.ai_security_analysis(always_run=True) if hasattr(self, 'ai_security_analysis') else None
+            self.root.after(0, lambda: self._recheck_complete(ai_result))
+
+        threading.Thread(target=do_recheck, daemon=True).start()
+
+    def _recheck_complete(self, ai_result):
+        """Handle AI recheck completion"""
+        self.recheck_btn.config(state=tk.NORMAL, text=f"🤖 {self.t('recheck_ai')}")
+
+        if ai_result:
+            verdict = ai_result.get("verdict", "unknown")
+            if verdict == "SAFE":
+                self.log_event(f"✅ {self.t('ai_analysis_ok')}")
+            elif verdict == "REVIEW":
+                self.log_event(f"⚠️ {self.t('ai_analysis_warning')}")
+            else:
+                self.log_event(f"🔴 {self.t('ai_verdict')}: {verdict}")
+        else:
+            self.log_event(f"❓ {self.t('ai_analysis_failed')}")
 
     def monitoring_loop(self):
         """Background monitoring loop"""
