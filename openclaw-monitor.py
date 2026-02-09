@@ -1874,9 +1874,18 @@ Diff:
         thread.start()
 
     def on_close(self):
-        """Handle window close"""
+        """Handle window close - proper cleanup"""
         self.running = False
-        self.root.destroy()
+        # Give threads a moment to stop
+        time.sleep(0.1)
+        try:
+            self.root.quit()  # Stop mainloop
+            self.root.destroy()  # Destroy window
+        except:
+            pass
+        # Force exit to ensure all threads stop
+        import os
+        os._exit(0)
 
     def run(self):
         """Run the application"""
